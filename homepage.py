@@ -28,7 +28,7 @@ image_label=Label(window,image=resized_image)
 image_label.place(x=80,y=50)
 
 #creating widgets,
-name_label=Label(frame2,text="HELLO USERNAME",font=('Hubballi',25),fg='dark green', bg='white')
+name_label=Label(frame2,text="HELLO FIRSTNAME",font=('Hubballi',25),fg='dark green', bg='white')
 name_label2=Label(frame1,text='PENNY PATROL',font=('Hubballi',15),fg='dark green',bg='white')
 name_label3=Label(frame2,text='Saving money today secures your tomorow',font=('Hubballi',15),fg='green',bg='white')
 add_expense_button=Button(frame1,text="Add expense",bg='white',borderwidth='0')
