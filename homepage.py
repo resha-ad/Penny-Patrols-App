@@ -25,7 +25,7 @@ resized_image = resize_image("penny.png",40,40) #calls resize_image function wit
 
 #image placement
 image_label=Label(window,image=resized_image)
-image_label.place(x=80,y=50)
+image_label.place(x=90,y=50)
 
 #creating widgets,
 name_label=Label(frame2,text="HELLO FIRSTNAME",font=('Hubballi',25),fg='dark green', bg='white')
@@ -41,7 +41,7 @@ logout_button = Button(frame1, text="logout",bg='lightgrey',borderwidth='0')
 logout_button.place(x=40, y=400)
 
 name_label.place(x=100,y=80)
-name_label2.place(x=10,y=100)
+name_label2.place(x=20,y=100)
 name_label3.place(x=80,y=180)
 
 window.mainloop()
