@@ -29,8 +29,8 @@ image_label.place(x=80,y=50)
 
 #creating widgets,
 name_label=Label(frame2,text="HELLO FIRSTNAME",font=('Hubballi',25),fg='dark green', bg='white')
-name_label2=Label(frame1,text='PENNY PATROL',font=('Hubballi',15),fg='dark green',bg='white')
-name_label3=Label(frame2,text='Saving money today secures your tomorow',font=('Hubballi',15),fg='green',bg='white')
+name_label2=Label(frame2,text='PENNY PATROL',font=('Hubballi',15),fg='dark green',bg='white')
+name_label3=Label(frame2,text='Saving money today secures your tomorrow',font=('Hubballi',15),fg='green',bg='white')
 add_expense_button=Button(frame1,text="Add expense",bg='white',borderwidth='0')
 add_expense_button.place(x=20,y=140)
 add_income_button=Button(frame1,text="Add income",bg='white',borderwidth='0')
