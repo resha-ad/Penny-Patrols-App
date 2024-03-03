@@ -1,64 +1,75 @@
 from tkinter import *
-from tkinter import messagebox
-import sqlite3
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+from data import expense_data
+import json
 
-window=Tk()
-window.title("Add Income Page")
-window.config(bg='#bcecac')
-window.maxsize(width=760,height=490)
-window.minsize(width=760,height=490)
+# Load data from JSON file
+with open('totals.json', 'r') as infile:
+    data = json.load(infile)
 
-def get_id():
-    conn = sqlite3.connect("UserDB.db")
-    c = conn.cursor()
+# Access values and store in variables
+total_expense = data['total_expense']
+savings = data['savings']
+balance = data['balance']
+income = data ['income']
 
-    # Execute a SELECT query to retrieve the primary key ID
-    c.execute("SELECT id FROM users_info")
-    record_id = c.fetchone()
-    print(record_id)
-    conn.close()
+plt.rcParams["axes.prop_cycle"] = plt.cycler(
+    color=["#7FFFD4", "#2F4F4F", "#7FFF00", "#006400", "#B4EEB4"])
 
-get_id()
+fig1, ax3 = plt.subplots(figsize=(5, 5))
+ax3.pie(expense_data.values(), labels=expense_data.keys(), autopct='%1.1f%%')
+ax3.set_title("Expenses By Type")
 
-        
-    
+window = Tk()
+window.title("View Report Page")
+window.config(bg="white")
+window.maxsize(width=1300, height=900)
+window.minsize(width=1300, height=900)
 
-#creating frame
-frame1=Frame(window,width=200,height=440)
-frame1.config(bg="white") 
-frame1.place(x=20,y=20)
+def log():
+    window.destroy()
+    import signin
 
-#adding labels in frame 1
-add_income=Button(frame1,text="Add Income",borderwidth=0,bg='dark green',fg='white')
-add_expenses=Button(frame1,text="Add Expenses",borderwidth=0,bg="white")
-view_report=Button(frame1, text="View Report", borderwidth=0,bg='white')
+logout_button = Button(window, text="Logout", bg='lightgrey', borderwidth=0, command=log)
+logout_button.place(x=30, y=850)
 
-#placing labels in frame 1
-add_income.place(x=20,y=160)
-add_expenses.place(x=20,y=190)
-view_report.place(x=20,y=220)
+frame2 = Frame(window, width=660, height=600, bg="white")
+frame2.place(x=230, y=20)
 
-#creating frame 2
-frame2=Frame(window,width=480,height=440)
-frame2.config(bg="white") 
-frame2.place(x=250,y=20)
+PieChart = FigureCanvasTkAgg(fig1, master=frame2)
+PieChart.draw()
+PieChart.get_tk_widget().place(relx=0.5, rely=0.5, anchor=CENTER)
+  
 
-#creating labels
-total_label=Label(frame2,text="Total Income:",bg='light green',font=("Hubballi",20),width=25)
-income_title=Entry(frame2,bg='light green',font=('Hubbali',12))
-income_title.insert(0, "Income Title")
-income_amount=Entry(frame2,bg='light green',font=('Hubbali',12))
-income_amount.insert(0, "Income Amount")
-income_type=Entry(frame2, bg='light green',font=('Hubbali',12))
-income_type.insert(0, "Income Type")
-add_income=Button(frame2, text="Add Income",font=('Hubbali',12))
+frame3 = Frame(window, bg="#bcecac", width=220, height=150)
+frame3.place(x=980, y=80)
+bl = Label(frame3, text="Balance", borderwidth=0, bg="#bcecac", font=("Arial", 15))
+bl.place(x=50, y=30)
+balance = Label(frame3,text=savings, bg="grey", width=20)
+balance.place(x=30, y=70)
 
-#place labels
-total_label.place(x=40,y=40)
-income_title.place(x=40,y=90)
-income_amount.place(x=40,y=120)
-income_type.place(x=40,y=150)
-add_income.place(x=40,y=180)
+
+frame4 = Frame(window, bg="#bcecac", width=220, height=150)
+frame4.place(x=50, y=670)
+il = Label(frame4, text="+Income", borderwidth=0, bg="#bcecac", font=("Arial", 15))
+il.place(x=50, y=30)
+income = Label(frame4, text=income, bg="grey", width=20)
+income.place(x=30, y=70)
+
+frame5 = Frame(window, bg="#bcecac", width=220, height=150)
+frame5.place(x=980, y=670)
+el = Label(frame5, text="-Expenses", borderwidth=0, bg="#bcecac", font=("Arial", 15))
+el.place(x=50, y=30)
+expense = Label(frame5, text=total_expense, bg="grey", width=20)
+expense.place(x=30, y=70)
+
+frame6 = Frame(window, bg="#bcecac", width=220, height=150)
+frame6.place(x=40, y=80)
+sl = Label(frame6, text="Saving", borderwidth=0, bg="#bcecac", font=("Arial", 15))
+sl.place(x=50, y=30)
+saving = Label(frame6, text=savings, bg="grey", width=20)
+saving.place(x=30, y=70)
 
 
 window.mainloop()
