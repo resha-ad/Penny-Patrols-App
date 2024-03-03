@@ -1,205 +1,163 @@
-from tkinter import*
-from tkinter import messagebox
 import sqlite3
-root=Tk()
-lbl=Label(root,text='PENNY PATROL',font=('Arial Bold',30))
-lbl.place(x=200,y=0)
-root.geometry('1000x1000')
-root.resizable(1,1)
+from tkinter import *
+from tkinter import messagebox
 
-con=sqlite3.connect('user_database.db')
-cursor=con.cursor()
-cursor.execute('''CREATE TABLE IF NOT EXISTS user(
-    ID INTEGER PRIMARY KEY AUTOINCREMENT,
-    fname           TEXT,
-    lname            TEXT,
-    eml              TEXT,
-    pw               INT
-    cpw              INT                      
-)''')
-con.commit()
-con.close()
+# Function to create the database table
+def create_table():
+    conn = sqlite3.connect('expense_tracker.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY,
+                    fullname TEXT NOT NULL,
+                    lastname TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    password TEXT NOT NULL)''')
+    conn.commit()
+    conn.close()
 
-def add():
-    con=sqlite3.connect('user_database.db')
-    c=con.cursor()
-    c.execute('INSERT INTO user(fname,lname,eml,pw,cpw) VALUES(?,?,?,?,?)',
-              (firstname.get(),lastname.get(),email.get(),password.get(),confirmpassword()))
-    con.commit()
-    con.close()
-    firstname.delete(0,END)
-    lastname.delete(0,END)
-    email.delete(0,END)
-    password.delete(0,END)
-    confirmpassword.delete(0,END)
+# Function to add user to the database
+def add_user():
+    fullname = fullname_entry.get()
+    lastname = lastname_entry.get()
+    email = email_entry.get()
+    password = password_entry.get()
+    confirm_password = confirm_password_entry.get()
 
+    if fullname == '' or lastname == '' or email == '' or password == '' or confirm_password == '':
+        messagebox.showerror("Error", "Please fill in all fields")
+    elif not (email.endswith("@gmail.com") or email.endswith("@yahoo.com")):
+             messagebox.showerror("Error", "Invalid email address")
+    elif len(password)<8:
+            messagebox.showerror("Error","Password is less than 8 characters")
+    elif password != confirm_password:
+        messagebox.showerror("Error", "Passwords do not match")
+    else:
+        try:
+            conn = sqlite3.connect('expense_tracker.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO users (fullname, lastname, email, password) VALUES (?, ?, ?, ?)",
+                    (fullname, lastname, email, password))
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("Success", "User added successfully!")
+        except sqlite3.IntegrityError: #ensures email remains unique
+               messagebox.showerror("Error", "Email address already exists!")
 
-def retrieve():
-    con=sqlite3.connect('user_database.db')
-    c=con.cursor()
-    c.execute("SELECT * FROM user")
-    records=c.fetchall()
-    print(records)
-    print_records=''
-    for record in records:
-        print_records+=str(record[0])+' '+str(record[1])+' '+str(record[2])+' '+str(record[3])+' '+str(record[4])+' '+str(record[5])+'\n'
-    query_label=Label(root,text=print_records)
-    query_label.place(x=450,y=100)
-    con.close()
+# Function to retrieve user data from the database
+def retrieve_users():
+    conn = sqlite3.connect('expense_tracker.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM users")
+    rows = c.fetchall()
+    conn.close()
 
-def delete():
-    con=sqlite3.connect('user_database.db')
-    c=con.cursor()
-    c.execute('DELETE FROM user WHERE ID='+deletebox.get())
-    con.commit()
-    con.close()
-    deletebox.delete(0,END)
-    retrieve()
+    if not rows:
+        messagebox.showinfo("Info", "No users found")
+    else:
+        user_list.delete(0, END)
+        for row in rows:
+            user_list.insert(END, row)
 
-def edit():
-    global editor
-    editor=Tk()
-    editor.title('Update Data')
-    editor.geometry('300x400')
-    con=sqlite3.connect('user_database.db')
-    c=con.cursor()
-    record_id=updatebox.get()
-    c.execute('SELECT * FROM user WHERE ID=?',(record_id,))
-    records=c.fetchall()
-    global  firstname_editor
-    global lastname_editor
-    global  email_editor
-    global password_editor
-    global confirmpassword_editor
+# Function to delete selected user from the database
+def delete_user():
+    selected_user = user_list.curselection()
+    if selected_user:
+        conn = sqlite3.connect('expense_tracker.db')
+        c = conn.cursor()
+        user_id = user_list.get(selected_user)[0]
+        c.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.commit()
+        conn.close()
+        messagebox.showinfo("Success", "User deleted successfully!")
+        retrieve_users()
+    else:
+        messagebox.showerror("Error", "Please select a user to delete")
 
-    firstname_editor=Entry(editor,width=30)
-    firstname_editor.grid(row=0,column=1,padx=20,pady=(10,0))
+# Function to update selected user's data in the database
+def update_user():
+    selected_user = user_list.curselection()
+    if selected_user:
+        user_id = user_list.get(selected_user)[0]
+        fullname = fullname_entry.get()
+        lastname = lastname_entry.get()
+        email = email_entry.get()
+        password = password_entry.get()
+        confirm_password = confirm_password_entry.get()
 
-    lastname_editor=Entry(editor,width=30)
-    lastname_editor.grid(row=1,column=1)
+        if fullname == '' or lastname == '' or email == '' or password == '' or confirm_password == '':
+            messagebox.showerror("Error", "Please fill in all fields")
+        elif not (email.endswith("@gmail.com") or email.endswith("@yahoo.com")):
+             messagebox.showerror("Error", "Invalid email address")
+        elif len(password)<8:
+            messagebox.showerror("Error","Password is less than 8 characters")
+        elif password != confirm_password:
+            messagebox.showerror("Error", "Passwords do not match")
+        else:
+            try:
+                conn = sqlite3.connect('expense_tracker.db')
+                c = conn.cursor()
+                c.execute("UPDATE users SET fullname=?, lastname=?, email=?, password=? WHERE id=?",
+                        (fullname, lastname, email, password, user_id))
+                conn.commit()
+                conn.close()
+                messagebox.showinfo("Success", "User updated successfully!")
+                retrieve_users()
+            except sqlite3.IntegrityError: #ensures email remains unique
+               messagebox.showerror("Error", "Email address already exists!")
+    else:
+        messagebox.showerror("Error", "Please select a user to update")
 
-    email_editor=Entry(editor,width=30)
-    email_editor.grid(row=2,column=1)
+root = Tk()
+root.title("SIGN UP")
+root.maxsize(width="760",height="410")
+root.config(bg="#82a67d")
+create_table()
 
-    password_editor=Entry(editor,width=30)
-    password_editor.grid(row=3,column=1)
-
-    confirmpassword_editor=Entry(editor,width=30)
-    confirmpassword_editor.grid(row=4,column=1)
-    
-    firstname_label=Label(editor,text="Username")
-    firstname_label.grid(row=0,column=0,pady=(10,0))
-
-    lastname_label=Label(editor,text="Address")
-    lastname_label.grid(row=1,column=0)
-
-    email_label=Label(editor,text="Email")
-    email_label.grid(row=2,column=0)
-
-    password_label=Label(editor,text="Password")
-    password_label.grid(row=3,column=0)
-
-    confirmpassword_label=Label(editor,text="Confirmpassword")
-    confirmpassword_label.grid(row=4,column=0)
-
-
-    for record in records:
-        firstname_editor.insert(0,record[1])
-        lastname_editor.insert(0,record[2])
-        email_editor.insert(0,record[3])
-        password_editor.insert(0,record[4])
-        confirmpassword_editor.insert(0,record[5])
-
-    updatebox.delete(0,END)
-    btn_save=Button(editor,text='SAVE',command=lambda:update(record_id))
-    btn_save.grid(row=5,column=0,columnspan=2, pady=10,padx=10,ipadx=125)
-    
-
-def update(record_id):
-    con=sqlite3.connect('emp_database.db')
-    c=con.cursor()
-    c.execute('''
-        UPDATE employee SET 
-              fname=:f,
-              lname=:l,
-              eml=:e,
-              pw=:p,
-              cpw=:c,
-               WHERE ID = :id''',
-               {
-                   'f': firstname_editor.get(),
-                   'l': lastname_editor.get(),
-                   'e': email_editor.get(),
-                   'p': password_editor.get(),
-                   'c': confirmpassword_editor.get(),
-                   'id': record_id
-               }
-    )
-    con.commit()
-    con.close()
-    editor.destroy()
-    retrieve()
+# Left Frame
+left_frame = Frame(root, width=350, height=410,bg="white")
+left_frame.pack(side="left")
+label1=Label(left_frame,text="PENNY",font=("Hubballi",40),bg="white",fg="#82a67d")
+label2=Label(left_frame,text="PATROL",font=("Hubballi",40),bg="white",fg="#82a67d")
+label1.place(x=60,y=120)
+label2.place(x=60,y=200)
 
 
+# Right Frame for Labels, Entry fields, and Listbox
+right_frame = Frame(root,width=380,height=410)
+right_frame.config(bg="#82a67d")
+right_frame.pack(side="left", padx=20, pady=10)
 
+# Labels
+Label(right_frame, text="First Name:", bg="#82a67d").grid(row=0, column=0, padx=5, pady=5)
+Label(right_frame, text="Last Name:", bg="#82a67d").grid(row=1, column=0, padx=5, pady=5)
+Label(right_frame, text="Email:", bg="#82a67d").grid(row=2, column=0, padx=5, pady=5)
+Label(right_frame, text="Password:", bg="#82a67d").grid(row=3, column=0, padx=5, pady=5)
+Label(right_frame, text="Confirm Password:", bg="#82a67d").grid(row=4, column=0, padx=5, pady=5)
 
+# Entry fields
+fullname_entry = Entry(right_frame)
+fullname_entry.grid(row=0, column=1, padx=5, pady=5)
+lastname_entry = Entry(right_frame)
+lastname_entry.grid(row=1, column=1, padx=5, pady=5)
+email_entry = Entry(right_frame)
+email_entry.grid(row=2, column=1, padx=5, pady=5)
+password_entry = Entry(right_frame, show="*")
+password_entry.grid(row=3, column=1, padx=5, pady=5)
+confirm_password_entry = Entry(right_frame, show="*")
+confirm_password_entry.grid(row=4, column=1, padx=5, pady=5)
 
+# Buttons
+add_button = Button(right_frame, text="signup", command=add_user)
+add_button.grid(row=5, column=0, padx=5, pady=5)
+retrieve_button = Button(right_frame, text="Retrieve", command=retrieve_users)
+retrieve_button.grid(row=5, column=1, padx=5, pady=5)
+delete_button = Button(right_frame, text="Delete", command=delete_user)
+delete_button.grid(row=5, column=2, padx=5, pady=5)
+update_button = Button(right_frame, text="Update", command=update_user)
+update_button.grid(row=5, column=3, padx=5, pady=5)
 
-
-label_firstname=Label(root,text="Firstname",font=("Arial Bold",20))
-label_firstname.place(x=0,y=90)
-
-label_lastname=Label(root,text="Lastname",font=("Arial Bold",20))
-label_lastname.place(x=0,y=140)
-
-label_email=Label(root,text="Email",font=("Arial Bold",20))
-label_email.place(x=0,y=190)
-
-label_password=Label(root,text="Password",font=("Arial Bold",20))
-label_password.place(x=0,y=240)
-
-label_confirmpassword=Label(root,text="Confirmpassword",font=("Arial Bold",20))
-label_confirmpassword.place(x=0,y=290)
-
-label_delete=Label(root,text="DeleteRecord",font=("Arial Bold",20))
-label_delete.place(x=0,y=350)
-
-label_update=Label(root,text="UpdateRecord",font=("Arial Bold",20))
-label_update.place(x=0,y=480)
-
-firstname=Entry(root,width=30)
-firstname.place(x=170,y=100,height=30)
-
-lastname=Entry(root,width=30)
-lastname.place(x=170,y=150,height=30)
-
-email=Entry(root,width=30)
-email.place(x=170,y=200,height=30)
-
-password=Entry(root,width=30)
-password.place(x=170,y=250,height=30)
-
-confirmpassword=Entry(root,width=30)
-confirmpassword.place(x=170,y=300,height=30)
-
-deletebox=Entry(root,width=30)
-deletebox.place(x=190,y=350,height=30)
-
-updatebox=Entry(root,width=30)
-updatebox.place(x=210,y=480,height=30)
-
-btn_add=Button(root,text="Add",font=('Arial Bold',20),command=add)
-btn_add.place(x=0,y=400)
-
-btn_retrieve=Button(root,text="Retrieve",font=('Arial Bold',20),command=retrieve)
-btn_retrieve.place(x=100,y=400)
-
-btn_delete=Button(root,text="Delete",font=('Arial Bold',20),command=delete)
-btn_delete.place(x=250,y=400)
-
-btn_edit=Button(root,text="Update",font=('Arial Bold',20),command=edit)
-btn_edit.place(x=400,y=400)
-
-
+# User Listbox
+user_list = Listbox(right_frame, width=40, height=10)
+user_list.grid(row=6, column=0, columnspan=4, padx=5, pady=5)
 
 root.mainloop()
