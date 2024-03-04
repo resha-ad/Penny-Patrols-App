@@ -1,75 +1,177 @@
+# Function to retrieve user data from the database
 from tkinter import *
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
-from data import expense_data
+from tkinter import messagebox
+import sqlite3
+temporary_data = {}
+import threading
 import json
 
-# Load data from JSON file
-with open('totals.json', 'r') as infile:
-    data = json.load(infile)
+#to change page
+def report():
+    root.destroy()
+    import report
 
-# Access values and store in variables
-total_expense = data['total_expense']
-savings = data['savings']
-balance = data['balance']
-income = data ['income']
+#create expense table
+def create_expense_table():
+    conn = sqlite3.connect('expense_tracker.db')
+    c = conn.cursor()
+    
+    c.execute("DELETE FROM expenses") #old values are deleted and table is empty
 
-plt.rcParams["axes.prop_cycle"] = plt.cycler(
-    color=["#7FFFD4", "#2F4F4F", "#7FFF00", "#006400", "#B4EEB4"])
+    c.execute('''CREATE TABLE IF NOT EXISTS expenses
+                 (id INTEGER PRIMARY KEY, expense REAL, expense_type TEXT)''')
+    conn.commit()
+    conn.close()
 
-fig1, ax3 = plt.subplots(figsize=(5, 5))
-ax3.pie(expense_data.values(), labels=expense_data.keys(), autopct='%1.1f%%')
-ax3.set_title("Expenses By Type")
+#add expense values in the database
+def add_expense():
+    income= entry_income.get()
+    expense = entry_expense.get()
+    expense_type = var_expense_type.get()
 
-window = Tk()
-window.title("View Report Page")
-window.config(bg="white")
-window.maxsize(width=1300, height=900)
-window.minsize(width=1300, height=900)
+    if not all([expense, expense_type]):
+        messagebox.showerror("Error", "All fields are required")
+        return
+    else:
+        try:
+            expense = float(expense)
+        except ValueError:
+            messagebox.showerror("Error", "Expense amount must be a number")
+            return
+        try:
+            income = float(income)
+        except ValueError:
+            messagebox.showerror("Error", "Income amount must be a number")
+            return
+        else:
+            conn = sqlite3.connect('expense_tracker.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO expenses (expense, expense_type) VALUES (?, ?)",
+                      (expense, expense_type))
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("Success", "Expense added successfully")
 
-def log():
-    window.destroy()
-    import signin
+#delete expense value from database
+def delete_expense():
+    expense_id = entry_delete_expense_id.get()
 
-logout_button = Button(window, text="Logout", bg='lightgrey', borderwidth=0, command=log)
-logout_button.place(x=30, y=850)
+    conn = sqlite3.connect('expense_tracker.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM expenses WHERE id=?", (expense_id,))
+    conn.commit()
+    conn.close()
 
-frame2 = Frame(window, width=660, height=600, bg="white")
-frame2.place(x=230, y=20)
+    messagebox.showinfo("Success", "Expense deleted successfully")
 
-PieChart = FigureCanvasTkAgg(fig1, master=frame2)
-PieChart.draw()
-PieChart.get_tk_widget().place(relx=0.5, rely=0.5, anchor=CENTER)
-  
+#calculates total saving, expenses and income
+def calculate_totals():
+    conn = sqlite3.connect('expense_tracker.db')
+    c = conn.cursor()
 
-frame3 = Frame(window, bg="#bcecac", width=220, height=150)
-frame3.place(x=980, y=80)
-bl = Label(frame3, text="Balance", borderwidth=0, bg="#bcecac", font=("Arial", 15))
-bl.place(x=50, y=30)
-balance = Label(frame3,text=savings, bg="grey", width=20)
-balance.place(x=30, y=70)
+    # Total Expense
+    c.execute("SELECT SUM(expense) FROM expenses")
+    total_expense = c.fetchone()[0]
+    if total_expense is None:
+        total_expense = 0
+
+# Calculate Savings
+    try:
+        income = float(entry_income.get())
+    except ValueError:
+        messagebox.showerror("Error", "Income amount must be a number")
+        return
+    
+    savings = income - total_expense
+    balance = savings
+
+# Display totals in GUI
+    label_total_expense.config(text="Total Expense: $" + str(total_expense))
+    if savings < 0:
+        label_savings.config(text="Savings: 0")
+    else:
+        label_savings.config(text="Savings: $" + str(savings))
+
+# Total Expense by Type
+    c.execute("SELECT expense_type, SUM(expense) FROM expenses GROUP BY expense_type")
+    total_expense_by_type = c.fetchall()
+    data = {
+        "total_expense": total_expense,
+        "savings": savings,
+        "balance": balance,
+        "income" : income
+    }
+#saves above data in json
+    with open('totals.json', 'w') as outfile:
+        json.dump(data, outfile)
+
+    conn.close()
 
 
-frame4 = Frame(window, bg="#bcecac", width=220, height=150)
-frame4.place(x=50, y=670)
-il = Label(frame4, text="+Income", borderwidth=0, bg="#bcecac", font=("Arial", 15))
-il.place(x=50, y=30)
-income = Label(frame4, text=income, bg="grey", width=20)
-income.place(x=30, y=70)
+# Create main window
+root = Tk()
+root.title("Add Income and Expense")
+root.config(bg="#82a67d")
+root.maxsize(width=760,height=410)
+root.minsize(width=760,height=410)
 
-frame5 = Frame(window, bg="#bcecac", width=220, height=150)
-frame5.place(x=980, y=670)
-el = Label(frame5, text="-Expenses", borderwidth=0, bg="#bcecac", font=("Arial", 15))
-el.place(x=50, y=30)
-expense = Label(frame5, text=total_expense, bg="grey", width=20)
-expense.place(x=30, y=70)
+# Create database table
+create_expense_table()
 
-frame6 = Frame(window, bg="#bcecac", width=220, height=150)
-frame6.place(x=40, y=80)
-sl = Label(frame6, text="Saving", borderwidth=0, bg="#bcecac", font=("Arial", 15))
-sl.place(x=50, y=30)
-saving = Label(frame6, text=savings, bg="grey", width=20)
-saving.place(x=30, y=70)
+# Frames
+income_frame = Frame(root, bg="white", padx=20, pady=20)
+income_frame.grid(row=1, column=2, padx=20, pady=30)
+
+expense_frame = Frame(root, bg="white", padx=20, pady=20)
+expense_frame.grid(row=1, column=3, padx=20, pady=30)
+
+totals_frame = Frame(root, bg="white", padx=20, pady=20)
+totals_frame.grid(row=1, column=4, padx=20, pady=30)
 
 
-window.mainloop()
+# Add Income Widgets
+label_income_title = Label(income_frame, text="Total Income", bg="white")
+label_income_title.grid(row=0, column=1, padx=5, pady=5)
+entry_income = Entry(income_frame)
+entry_income.grid(row=1, column=1, padx=5, pady=5)
+
+
+# Add Expense Widgets
+label_expense = Label(expense_frame, text="Expense:", bg="white")
+label_expense.grid(row=0, column=0, padx=5, pady=5)
+entry_expense = Entry(expense_frame)
+entry_expense.grid(row=0, column=1, padx=5, pady=5)
+
+label_expense_type = Label(expense_frame, text="Expense Type:", bg="white")
+label_expense_type.grid(row=1, column=0, padx=5, pady=5)
+var_expense_type = StringVar()
+expense_type_options = ["Essentials", "Entertainment", "Food", "Transportation", "Other"]
+expense_type_dropdown = OptionMenu(expense_frame, var_expense_type, *expense_type_options)
+expense_type_dropdown.grid(row=1, column=1, padx=5, pady=5)
+
+button_add = Button(expense_frame, text="Add Expense", command=add_expense)
+button_add.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+
+# Delete Expense Widgets
+label_delete_expense_id = Label(expense_frame, text="Expense ID to Delete:",bg="white")
+label_delete_expense_id.grid(row=3, column=0, padx=5, pady=5)
+entry_delete_expense_id = Entry(expense_frame)
+entry_delete_expense_id.grid(row=3, column=1, padx=5, pady=5)
+
+button_delete = Button(expense_frame, text="Delete Expense", command=delete_expense)
+button_delete.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+
+# Display Totals Widgets
+button_calculate_totals = Button(totals_frame, text="Calculate Totals", command=calculate_totals)
+button_calculate_totals.pack(pady=5)
+
+label_total_expense = Label(totals_frame, text="Total Expense: $0",bg="white")
+label_total_expense.pack(pady=5)
+
+label_savings = Label(totals_frame, text="Savings: $0",bg="white")
+label_savings.pack(pady=5)
+
+report_button = Button(totals_frame,text="View Report",bg="white",command=report)
+report_button.pack(pady=5)
+
+root.mainloop()
