@@ -37,7 +37,7 @@ def login():
     conn = sqlite3.connect("UserDB.db")
     c = conn.cursor()
 #method to retrieve the data
-    c.execute('''SELECT * FROM users_info WHERE email=? AND password=?''', (email, password))
+    c.execute('''SELECT * FROM users WHERE email=? AND password=?''', (email, password))
 #returns single record
     user = c.fetchone()
     conn.close()
@@ -47,9 +47,7 @@ def login():
         homep()
     else:
         messagebox.showerror("Error", "Invalid Login")
-    with open('currentUser.txt', 'w') as currentUser:
-        currentUser.write(user[0])
-
+   
 #creating widgets
 name_label=Label(root,text="PENNY PATROL",bg='#658d6d',font=('Hubballi',35),fg='dark green')
 email_entry=Entry(root,font=('Arial,10'),fg='grey',width=25)
